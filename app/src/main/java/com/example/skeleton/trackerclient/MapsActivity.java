@@ -10,9 +10,28 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
     private GoogleMap mMap;
     private TrackerUpdateRequest mUpdateRequest = new TrackerUpdateRequest();
+    private Timer mUpdateTimer = new Timer();
+    private TimerTask mUpdateRequestTask = null;
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        mUpdateRequestTask.cancel();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        mUpdateTimer.schedule(mUpdateRequestTask, 0, 30000);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,7 +42,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        mUpdateRequest.execute(getString(R.string.tracker_server_url));
+        mUpdateRequestTask = new TimerTask() {
+            @Override
+            public void run() {
+                new TrackerUpdateRequest().execute(getString(R.string.tracker_server_url));
+            }
+        };
     }
 
 
