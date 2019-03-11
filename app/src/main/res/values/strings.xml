@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">TrackerClient</string>
     <string name="title_activity_maps">Map</string>
-    <string name="tracker_server_url">https://192.168.1.100:46000</string>
+    <string name="tracker_server_url">https://192.168.1.100:46000/0</string>
 </resources>

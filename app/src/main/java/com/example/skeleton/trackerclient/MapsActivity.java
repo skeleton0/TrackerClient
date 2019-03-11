@@ -30,6 +30,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onResume() {
         super.onResume();
 
+        mUpdateRequestTask = new TimerTask() {
+            @Override
+            public void run() {
+                new TrackerUpdateRequest().execute(getString(R.string.tracker_server_url));
+            }
+        };
+
         mUpdateTimer.schedule(mUpdateRequestTask, 0, 30000);
     }
 
@@ -41,13 +48,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
-
-        mUpdateRequestTask = new TimerTask() {
-            @Override
-            public void run() {
-                new TrackerUpdateRequest().execute(getString(R.string.tracker_server_url));
-            }
-        };
     }
 
 
