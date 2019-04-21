@@ -1,7 +1,12 @@
 package com.example.skeleton.trackerclient;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
+import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -10,12 +15,14 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LoaderManager.LoaderCallbacks<TrackerUpdate> {
+    private static final String LOG_TAG = MapsActivity.class.getSimpleName();
     private GoogleMap mMap;
-    private TrackerUpdateRequest mUpdateRequest = new TrackerUpdateRequest();
     private Timer mUpdateTimer = new Timer();
     private TimerTask mUpdateRequestTask = null;
 
@@ -30,10 +37,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onResume() {
         super.onResume();
 
+        Bundle bundle = new Bundle();
+        bundle.putString("serverAddress", getString(R.string.tracker_server_url));
+        getSupportLoaderManager().restartLoader(0, bundle, this);
+
         mUpdateRequestTask = new TimerTask() {
             @Override
             public void run() {
-                new TrackerUpdateRequest().execute(getString(R.string.tracker_server_url));
+
             }
         };
 
@@ -68,5 +79,38 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    @NonNull
+    @Override
+    public Loader<TrackerUpdate> onCreateLoader(int i, @Nullable Bundle bundle) {
+        URL serverAddress = null;
+
+        if (bundle != null) {
+            try {
+                serverAddress = new URL(bundle.getString("serverAddress"));
+            } catch (MalformedURLException e) {
+                Log.e(LOG_TAG, "Caught exception trying to parse URL: " + e.getMessage());
+            }
+        }
+
+        return new TrackerUpdateRequest(this, serverAddress);
+    }
+
+    @Override
+    public void onLoadFinished(@NonNull Loader<TrackerUpdate> loader, TrackerUpdate trackerUpdate) {
+        if (mMap == null || trackerUpdate == null) {
+            return;
+        }
+
+        LatLng trackerPos = new LatLng(trackerUpdate.mLatitude, trackerUpdate.mLongitude);
+
+        mMap.clear();
+        mMap.addMarker(new MarkerOptions().position(trackerPos).title("MT09SP"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(trackerPos));
+    }
+
+    @Override
+    public void onLoaderReset(@NonNull Loader<TrackerUpdate> loader) {
     }
 }
