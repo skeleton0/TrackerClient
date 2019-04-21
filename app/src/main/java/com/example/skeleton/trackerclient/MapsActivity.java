@@ -1,5 +1,6 @@
 package com.example.skeleton.trackerclient;
 
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -25,31 +26,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     private Timer mUpdateTimer = new Timer();
     private TimerTask mUpdateRequestTask = null;
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        mUpdateRequestTask.cancel();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        Bundle bundle = new Bundle();
-        bundle.putString("serverAddress", getString(R.string.tracker_server_url));
-        getSupportLoaderManager().restartLoader(0, bundle, this);
-
-        mUpdateRequestTask = new TimerTask() {
-            @Override
-            public void run() {
-
-            }
-        };
-
-        mUpdateTimer.schedule(mUpdateRequestTask, 0, 30000);
-    }
+    private boolean mSetMapPosition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +38,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        mSetMapPosition = true;
+    }
 
     /**
      * Manipulates the map once available.
@@ -75,10 +58,20 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        Handler handler = new Handler();
+
+        Bundle bundle = new Bundle();
+        bundle.putString("serverAddress", "https://192.168.1.100:47000/0");
+        MapsActivity currentActivity = this;
+
+        mUpdateRequestTask = new TimerTask() {
+            @Override
+            public void run() {
+                handler.post(() -> getSupportLoaderManager().restartLoader(0, bundle, currentActivity));
+            }
+        };
+
+        mUpdateTimer.schedule(mUpdateRequestTask, 0, 30000);
     }
 
     @NonNull
@@ -99,7 +92,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLoadFinished(@NonNull Loader<TrackerUpdate> loader, TrackerUpdate trackerUpdate) {
-        if (mMap == null || trackerUpdate == null) {
+        if (trackerUpdate == null) {
             return;
         }
 
@@ -107,7 +100,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         mMap.clear();
         mMap.addMarker(new MarkerOptions().position(trackerPos).title("MT09SP"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(trackerPos));
+
+        if (mSetMapPosition) {
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(trackerPos, 16.0f));
+            mSetMapPosition = false;
+        }
     }
 
     @Override
