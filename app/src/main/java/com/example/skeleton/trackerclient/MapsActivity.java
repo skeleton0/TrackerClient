@@ -1,8 +1,11 @@
 package com.example.skeleton.trackerclient;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
@@ -13,6 +16,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -58,6 +63,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            mMap.setMyLocationEnabled(true);
+        }
+
         Handler handler = new Handler();
 
         Bundle bundle = new Bundle();
@@ -99,10 +108,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng trackerPos = new LatLng(trackerUpdate.mLatitude, trackerUpdate.mLongitude);
 
         mMap.clear();
-        mMap.addMarker(new MarkerOptions().position(trackerPos).title("MT09SP"));
+        mMap.addMarker(new MarkerOptions().position(trackerPos).title(trackerUpdate.mTimestamp));
 
         if (mSetMapPosition) {
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(trackerPos, 16.0f));
+            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(trackerPos, 16.0f));
             mSetMapPosition = false;
         }
     }
